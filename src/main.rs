@@ -17,6 +17,7 @@ use serde_json::{Value};
 use crate::message::Message;
 use crate::time_range::TimeRange;
 use sqlx::{Connection, Executor, MySqlConnection, Row};
+use sqlx::migrate::Migrate;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
