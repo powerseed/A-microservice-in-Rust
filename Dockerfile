@@ -3,4 +3,4 @@ ARG SQLX_OFFLINE=true
 WORKDIR /var/www/microservice/
 COPY . .
 RUN cargo install --path .
-CMD ["microservice"]
+CMD ["rust_microservice"]

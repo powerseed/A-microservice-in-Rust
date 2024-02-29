@@ -121,39 +121,45 @@ fn parse_query(query: &str) -> Result<TimeRange, String> {
 
 async fn query_db(time_range: &TimeRange) -> Option<Vec<Message>> {
     let mut conn = create_db_connection().await;
-    let messages_option = match time_range {
-        TimeRange {before: Some(before), after: Some(after)} => {
-            sqlx::query!("SELECT * FROM messages WHERE timestamp BETWEEN ? AND ?", after, before)
-                .fetch_all(&mut conn)
-                .await
-        },
-        TimeRange {before: None, after: Some(after)} => {
-            sqlx::query!("SELECT * FROM messages WHERE timestamp > ?", after)
-                .fetch_all(&mut conn)
-                .await
-        },
-        TimeRange {before: Some(before), after: None} => {
-            sqlx::query!("SELECT * FROM messages WHERE timestamp < ?", before)
-                .fetch_all(&mut conn)
-                .await
-        },
-        TimeRange {before: None, after: None} => {
-            sqlx::query!("SELECT * FROM messages")
-                .fetch_all(&mut conn)
-                .await
-        }
-    };
+    let messages_option = sqlx::query!("SELECT * FROM messages")
+        .fetch_all(&mut conn)
+        .await;
+
+    // let messages_option = match time_range {
+    //     TimeRange {before: Some(before), after: Some(after)} => {
+    //         sqlx::query!("SELECT * FROM messages WHERE timestamp BETWEEN ? AND ?", after, before)
+    //             .fetch_all(&mut conn)
+    //             .await
+    //     },
+    //     TimeRange {before: None, after: Some(after)} => {
+    //         sqlx::query!("SELECT * FROM messages WHERE timestamp > ?", after)
+    //             .fetch_all(&mut conn)
+    //             .await
+    //     },
+    //     TimeRange {before: Some(before), after: None} => {
+    //         sqlx::query!("SELECT * FROM messages WHERE timestamp < ?", before)
+    //             .fetch_all(&mut conn)
+    //             .await
+    //     },
+    //     TimeRange {before: None, after: None} => {
+    //         sqlx::query!("SELECT * FROM messages")
+    //             .fetch_all(&mut conn)
+    //             .await
+    //     }
+    // };
 
     match messages_option {
         Ok(messages) => {
-            messages.iter().map(|message| {
+            let results = messages.iter().map(|message| {
                 Message {
-                    id: message.get("id"),
-                    username: message.get("username"),
-                    message: message.get("message"),
-                    timestamp: message.get("timestamp"),
+                    id: message.id.clone(),
+                    username: message.username.clone(),
+                    message: message.message.clone(),
+                    timestamp: message.timestamp.to_string()
                 }
-            }).collect()
+            }).collect();
+
+            return Some(results);
         },
         _ => None
     }
@@ -187,10 +193,6 @@ fn make_error_response(error: &str, status_code: StatusCode) -> Result<Response<
 
 fn render_page(messages: &Vec<Message>) -> String {
     let html = html! {
-        head {
-            title "microservice";
-            style "body { font-family: monospace }";
-        }
         body {
             ul {
                 @for message in messages {
@@ -200,7 +202,7 @@ fn render_page(messages: &Vec<Message>) -> String {
                 }
             }
         }
-    };
+    }.into_string();
 
-    return html.into_string();
+    return html;
 }
