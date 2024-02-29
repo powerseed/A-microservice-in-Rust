@@ -13,6 +13,7 @@ use tokio::net::TcpListener;
 use hyper::{Method, StatusCode};
 use http_body_util::{combinators::BoxBody, BodyExt};
 use hyper::header::HeaderValue;
+use maud::html;
 use serde_json::{Value};
 use crate::message::Message;
 use crate::time_range::TimeRange;
@@ -196,6 +197,22 @@ fn make_error_response(error: &str, status_code: StatusCode) -> Result<Response<
     Ok(res)
 }
 
-fn render_page(message: &Vec<Message>) -> String {
-    "".to_string()
+fn render_page(messages: &Vec<Message>) -> String {
+    let html = html! {
+        head {
+            title "microservice";
+            style "body { font-family: monospace }";
+        }
+        body {
+            ul {
+                @for message in &messages {
+                    li {
+                        (message.username) " (" (message.timestamp) "): " (message.message)
+                    }
+                }
+            }
+        }
+    };
+
+    return html.into_string();
 }
