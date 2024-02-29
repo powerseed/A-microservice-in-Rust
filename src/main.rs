@@ -18,23 +18,13 @@ use serde_json::{Value};
 use crate::message::Message;
 use crate::time_range::TimeRange;
 use sqlx::{Connection, Executor, MySqlConnection, Row};
-use sqlx::encode::IsNull::No;
 use sqlx::migrate::Migrate;
-use sqlx::mysql::MySqlRow;
+use dotenv;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let addr: SocketAddr = ([127, 0, 0, 1], 8080).into();
     let listener = TcpListener::bind(addr).await?;
-
-    let mut conn = create_db_connection().await;
-
-    sqlx::query("CREATE TABLE IF NOT EXISTS messages (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        username VARCHAR(128) NOT NULL,
-        message TEXT NOT NULL,
-        timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )").execute(&mut conn).await?;
 
     loop {
         let (tcp, _) = listener.accept().await?;
@@ -58,8 +48,6 @@ async fn echo(req: Request<hyper::body::Incoming>) -> Result<Response<BoxBody<By
                     after: None
                 })
             };
-
-            println!("time_range: {:?}", time_range);
 
             let response = match time_range {
                 Ok(time_range) => {
@@ -93,7 +81,7 @@ async fn echo(req: Request<hyper::body::Incoming>) -> Result<Response<BoxBody<By
 }
 
 async fn create_db_connection() -> MySqlConnection {
-    MySqlConnection::connect("mysql://root:qwer123!@localhost:3306/rust_microservice")
+    MySqlConnection::connect(&*dotenv::var("DATABASE_URL").unwrap())
         .await
         .unwrap()
 }
@@ -205,7 +193,7 @@ fn render_page(messages: &Vec<Message>) -> String {
         }
         body {
             ul {
-                @for message in &messages {
+                @for message in messages {
                     li {
                         (message.username) " (" (message.timestamp) "): " (message.message)
                     }

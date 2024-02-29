@@ -1,0 +1,2 @@
+FROM mysql
+ADD /src/schemas/messages.sql /docker-entrypoint-initdb.d/
